@@ -1,2 +1,100 @@
-# TelegramAutoComentator
-This application automatically connects to Telegram channels, monitors new messages and leaves comments under them. It uses the Telethon library to work with the Telegram API.
+# 📌 Телеграм-бот на Telethon
+
+## 📜 Опис
+Ця програма автоматично підключається до каналів Telegram, відстежує нові повідомлення та залишає коментарі під ними. Використовує бібліотеку **Telethon** для роботи з Telegram API.
+
+---
+
+## ⚙️ Встановлення
+
+### 1️⃣ Встановлення залежностей
+Спочатку потрібно встановити **Python 3.8+** та необхідні бібліотеки:
+```bash
+pip install -r requirements.txt
+```
+
+### 2️⃣ Створення необхідних папок
+Створити папки `images`, `sessions` та `logs`. Додати в них необхідні файли.
+
+### 3️⃣ Налаштування API Telegram
+
+📌 Для роботи потрібні **API ID** та **API Hash**, які можна отримати у [my.telegram.org](https://my.telegram.org/apps).
+
+Створи файл `sessions.json`.
+
+Додайте дані про облікові записи в `sessions.json` у форматі:
+```json
+{
+    "session_name1": {
+        "api_id": api_id1,
+        "api_hash": "api_hash1"
+    },
+    "session_name2": {
+        "api_id": api_id2,
+        "api_hash": "api_hash2"
+    },
+}
+```
+---
+
+## 🔧 Конфігурація
+
+Всі основні налаштування знаходяться у файлі `config.py`. Ти можеш змінити:
+- `CHANNELS_LIST` – список каналів, які бот буде моніторити.
+- `INVITE_LINKS` – список запрошувальних посилань до каналів, які бот буде моніторити.
+- `COMMENT_TEXTS` – список текстів для коментарів.
+- `COMMENT_IMAGES` – список назв картинок для коментарів з папки `images`.
+
+Приклад `config.py`:
+```python
+CHANNELS_LIST = ["@test1", "@test2", "@test3"]
+INVITE_LINKS = ["https://t.me/+Z8s8QzZ3_NVjNDgy"]
+COMMENT_TEXTS = [
+    "Дякую!", 
+    "Цікава інформація!", 
+    "Гарний пост!"
+    ]
+COMMENT_IMAGES = [
+    "image1.png",
+    ...
+    ]
+```
+---
+
+## 📂 Структура проекту
+```
+/project_root
+│-- app.py           # Головний файл запуску бота
+│-- config.py        # Файл конфігурації (список каналів, налаштування бота)
+│-- sessions.json    # Файл для збереження даних про сессії та їх API-ключі
+│-- requirements.txt # Список необхідних залежностей
+│-- run.sh           # Bash-скрипт для запуску на macOS/Linux
+│-- run.bat          # Скрипт для запуску на Windows
+│-- /sessions/       # Папка для збереження сесій Telegram
+│-- /images/         # Папка для збереження фотографій для коментарів
+│-- /logs/           # Папка для збереження логів
+```
+
+---
+
+## 🚀 Запуск програми
+
+### 🔹 У Windows:
+Відкрий командний рядок (`cmd`), перейди в папку зі скриптом і виконай команду:
+```bash
+python app.py
+```
+Або:
+
+Запустіть `run.bat`
+
+
+### 🔹 У macOS/Linux:
+```bash
+chmod +x run.sh
+./run.sh
+```
+Або без скрипта:
+```bash
+python3 app.py
+```

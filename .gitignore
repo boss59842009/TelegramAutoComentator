@@ -3,6 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Folders
+images/
+logs/
+sessions/
+sessions.json
+
 # C extensions
 *.so
 
