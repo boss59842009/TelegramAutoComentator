@@ -26,7 +26,6 @@ async def run_bot(session_name, api_id, api_hash, channels_list=None, comment_te
     logging.info(f"🔄 Запускаємо сесію {session_name}...")
     client = TelegramClient(f"sessions/{session_name}", api_id, api_hash)
     channels_list = [channel.strip("@") for channel in channels_list]
-
     try:
         await client.start()
         logging.info(f"✅ Авторизація успішна: {session_name}")
@@ -102,23 +101,31 @@ async def run_bot(session_name, api_id, api_hash, channels_list=None, comment_te
         return False
     except Exception as e:
         logging.error(f"⚠ Помилка в сесії {session_name}: {e}")
+        if "user has been deleted/deactivated" in str(e):
+            logging.error(f"❌ Акаунт {session_name} видалено! Переходимо до наступної...")
+            return False
     finally:
         print("🔴 Вихід з сесії")
         await client.disconnect()
 
     return True
 
+async def get_sessions():
+    json_files = [f for f in os.listdir("sessions") if f.endswith(".json")]
+    return json_files
+
+
 # Основна функція для перемикання акаунтів
 async def main():
-    with open("sessions.json", "r") as f:
-        sessions = json.load(f)
-    
+    sessions = await get_sessions()
     for session in sessions:        
         messages_mode = int(input("Оберіть варіант для коментування повідомлень: 1 - Тільки текст, 2 - Текст + картинка, 3 - Тільки Картинка "))
+        with open(f"sessions/{session}", "r") as f:
+            session_data = json.load(f)
         success = await run_bot(
-            session, 
-            sessions[session]["api_id"], 
-            sessions[session]["api_hash"],  
+            session_data["session_file"], 
+            session_data["app_id"], 
+            session_data["app_hash"],  
             CHANNELS_LIST,  
             COMMENT_TEXTS, 
             COMMENT_IMAGES,

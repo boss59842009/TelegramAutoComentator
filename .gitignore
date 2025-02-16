@@ -7,7 +7,7 @@ __pycache__/
 images/
 logs/
 sessions/
-sessions.json
+.DS_Store
 
 # C extensions
 *.so

@@ -20,25 +20,17 @@ pip install -r requirements.txt
 
 📌 Для роботи потрібні **API ID** та **API Hash**, які можна отримати у [my.telegram.org](https://my.telegram.org/apps).
 
-Створи файл `sessions.json`.
+Додати в папку `sessions` файли з самою сессією `session_name.session` та файл з інформацією про акаунт `session_name.json`. 
 
-Додайте дані про облікові записи в `sessions.json` у форматі:
+Приклад файлу `session_name.json`:
 ```json
 {
-    "session_name1": {
-        "api_id": api_id1,
-        "api_hash": "api_hash1"
-    },
-    "session_name2": {
-        "api_id": api_id2,
-        "api_hash": "api_hash2"
-    },
+    "app_id": app_id,
+    "app_hash": app_hash,
+    "session_file": "session_name"
 }
 ```
----
-
 ## 🔧 Конфігурація
-
 Всі основні налаштування знаходяться у файлі `config.py`. Ти можеш змінити:
 - `CHANNELS_LIST` – список каналів, які бот буде моніторити.
 - `INVITE_LINKS` – список запрошувальних посилань до каналів, які бот буде моніторити.
@@ -66,7 +58,6 @@ COMMENT_IMAGES = [
 /project_root
 │-- app.py           # Головний файл запуску бота
 │-- config.py        # Файл конфігурації (список каналів, налаштування бота)
-│-- sessions.json    # Файл для збереження даних про сессії та їх API-ключі
 │-- requirements.txt # Список необхідних залежностей
 │-- run.sh           # Bash-скрипт для запуску на macOS/Linux
 │-- run.bat          # Скрипт для запуску на Windows

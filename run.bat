@@ -7,5 +7,5 @@ echo Запускаю скрипт...
 timeout /t 3 > nul
 
 
-python main.py
+python app.py
 pause
