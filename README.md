@@ -26,8 +26,11 @@ pip install -r requirements.txt
 ```json
 {
     "app_id": app_id,
-    "app_hash": app_hash,
-    "session_file": "session_name"
+    "app_hash": "app_hash",
+    "session_file": "session_name",
+    "sdk": "Windows 11",
+    "device": "HP ProBook 450 G8",
+    "app_version": "5.4.1 x64",
 }
 ```
 ## 🔧 Конфігурація

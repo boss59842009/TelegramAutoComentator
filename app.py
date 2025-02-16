@@ -22,9 +22,29 @@ logging.basicConfig(
 
 
 # Основна логіка бота
-async def run_bot(session_name, api_id, api_hash, channels_list=None, comment_texts=None, comment_images=None, invite_links=None, messages_mode=1):
+async def run_bot(session_data, channels_list=None, comment_texts=None, comment_images=None, invite_links=None, messages_mode=1):
+    session_name = session_data['session_file']
+    api_id = session_data['app_id']
+    api_hash = session_data['app_hash']
+    if session_data['device']:
+        device_model = session_data['device']
+    else:
+        device_model = None
+    if session_data['sdk']:
+        system_version = session_data['sdk']
+    else:
+        system_version = None
+    if session_data['app_version']:
+        app_version = session_data['app_version']
+    else:
+        app_version = None
     logging.info(f"🔄 Запускаємо сесію {session_name}...")
-    client = TelegramClient(f"sessions/{session_name}", api_id, api_hash)
+    client = TelegramClient(
+        f"sessions/{session_name}", 
+        api_id, api_hash, 
+        device_model=device_model, 
+        system_version=system_version, 
+        app_version=app_version)
     channels_list = [channel.strip("@") for channel in channels_list]
     try:
         await client.start()
@@ -103,7 +123,7 @@ async def run_bot(session_name, api_id, api_hash, channels_list=None, comment_te
         logging.error(f"⚠ Помилка в сесії {session_name}: {e}")
         if "user has been deleted/deactivated" in str(e):
             logging.error(f"❌ Акаунт {session_name} видалено! Переходимо до наступної...")
-            return False
+        return False
     finally:
         print("🔴 Вихід з сесії")
         await client.disconnect()
@@ -123,9 +143,7 @@ async def main():
         with open(f"sessions/{session}", "r") as f:
             session_data = json.load(f)
         success = await run_bot(
-            session_data["session_file"], 
-            session_data["app_id"], 
-            session_data["app_hash"],  
+            session_data,  
             CHANNELS_LIST,  
             COMMENT_TEXTS, 
             COMMENT_IMAGES,
