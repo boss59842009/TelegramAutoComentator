@@ -50,15 +50,17 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
         await client.start()
         logging.info(f"✅ Авторизація успішна: {session_name}")
 
-        try:
-            channel_entities = None
-            channel_entities = [await client.get_entity(username) for username in channels_list]
-            commented_messages = {entity.id: set() for entity in channel_entities}
-        except Exception as e:
-            logging.error(f"Ошибка: {e}")
-            if 'No user has' in str(e) and 'as username' in str(e) and channel_entities == None:
-                logging.error("Не знайдено каналів для коментування. Скрипт завершено.")
-                exit()
+        channel_entities = []
+        for username in channels_list:
+            try:
+                channel_entity = await client.get_entity(username)
+                channel_entities.append(channel_entity)
+                commented_messages = {entity.id: set() for entity in channel_entities}
+            except Exception as e:
+                logging.error(f"Помилка при отриманні каналів: {e}")
+                if 'No user has' in str(e) and 'as username' in str(e) and channel_entities == None:
+                    logging.error("Не знайдено каналів для коментування. Скрипт завершено.")
+                    continue
 
         if channels_list:
             for channel in channels_list:
@@ -70,8 +72,7 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
                         logging.warning(f"❌ Вас заблоковано у каналі @{channel}")
                     else:
                         logging.warning(f"⚠ Не вдалося приєднатися до @{channel}: {e}")
-
-        if invite_links:
+        elif invite_links:
             for invite_link in invite_links:
                 try:
                     chat_hash = invite_link.split("+")[-1]  # Отримуємо хеш-запрошення
@@ -84,7 +85,9 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
                         logging.error(f"❌ Запрошувальне посилання {invite_link} не дійсне.")
                     else:
                         logging.error(f"❌ Акаунт не може приєднатися за запрошувальним посиланням {invite_link}")
-
+        else:
+            logging.error("Не знайдено каналів для коментування. Скрипт завершено.")
+            exit()
         # Обробка нових повідомлень у каналі
         @client.on(events.NewMessage(chats=channels_list))
         async def handler(event):
@@ -110,8 +113,10 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
                         except Exception as e:
                             if "the peer was invalid" in str(e):
                                 logging.error(f"❌ В каналі {event.chat.username} не можна залишити коментарі!")
+                                continue
                             else:
-                                logging.error(f"⚠ Помилка ƒпри коментуванні: {e}")
+                                logging.error(f"⚠ Помилка при коментуванні: {e}")
+                                continue
 
         logging.info("🚀 Бот запущений! Очікуємо нові повідомлення...")
         await client.run_until_disconnected()
@@ -125,7 +130,7 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
             logging.error(f"❌ Акаунт {session_name} видалено! Переходимо до наступної...")
         return False
     finally:
-        print("🔴 Вихід з сесії")
+        logging.info("🔴 Вихід з сесії")
         await client.disconnect()
 
     return True
