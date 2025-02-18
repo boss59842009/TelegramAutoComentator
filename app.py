@@ -76,7 +76,6 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
 
         # Ініціалізуємо словник для кожного каналу
         for channel in channel_entities:
-            print(type(channel.username))
             commented_messages[channel.id] = set()
 
         if channels_list:
