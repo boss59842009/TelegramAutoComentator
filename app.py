@@ -76,6 +76,7 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
 
         # Ініціалізуємо словник для кожного каналу
         for channel in channel_entities:
+            print(type(channel.username))
             commented_messages[channel.id] = set()
 
         if channels_list:
@@ -114,7 +115,6 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
             await async_sleep(delay)
             
             for entity in channel_entities:
-                print(entity)
                 if entity.id == event.message.peer_id.channel_id:
                     try:
                         # Перевіряємо чи не коментували цей пост раніше
@@ -150,7 +150,7 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
                             logging.error(f"❌ Канал {event.chat.username} є приватним")
                             logging.error(f"❌ Видаляємо канал з списку")
                             channel_entities.remove(entity)
-                            CHANNELS_LIST.remove(entity.username)
+                            CHANNELS_LIST.remove(f"@{entity.username}")
                             continue
                         else:
                             logging.error(f"⚠ Помилка при коментуванні: {e}")

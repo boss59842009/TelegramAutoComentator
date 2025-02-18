@@ -1,4 +1,4 @@
-CHANNELS_LIST = ["@channel_for_test11"]
+CHANNELS_LIST = ["@channel_for_test11", "@sportua_news"]
 INVITE_LINKS = ["https://t.me/+HkOBdwasdfao0NzMy"]
 COMMENT_TEXTS = [
     "Дякую!", 
