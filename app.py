@@ -61,13 +61,6 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
             try:
                 channel_entity = await client.get_entity(username)
                 channel_entities.append(channel_entity)
-                full_channel = await client(GetFullChannelRequest(channel_entity))
-                # Перевіряємо наявність групи для коментарів
-                if hasattr(full_channel, "full_chat") and full_channel.full_chat.linked_chat_id:
-                    await client(JoinChannelRequest(full_channel.full_chat.linked_chat_id))
-                    logging.info(f"Канал {username} приєднався до групи для коментарів: {full_channel.full_chat.linked_chat_id}")
-                else:
-                    logging.info(f"Канал {username} не має окремої групи для коментарів")
             except Exception as e:
                 logging.error(f"Помилка при отриманні каналів: {e}")
                 if 'No user has' in str(e) and 'as username' in str(e) and channel_entities == None:
@@ -120,7 +113,39 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
                         if event.message.id in commented_messages.get(entity.id, set()):
                             logging.info(f"Пост вже було прокоментовано, пропускаємо...")
                             continue
-                            
+                        try:
+                            full_channel = await client(GetFullChannelRequest(entity))
+                            # Перевіряємо наявність групи для коментарів
+                            if hasattr(full_channel, "full_chat") and full_channel.full_chat.linked_chat_id:
+                                try:
+                                    await client(JoinChannelRequest(full_channel.full_chat.linked_chat_id))
+                                    logging.info(f"Канал {username} приєднався до групи для коментарів: {full_channel.full_chat.linked_chat_id}")
+                                except Exception as e:
+                                    if "channel specified is private" in str(e):
+                                        logging.error(f"❌ Канал {event.chat.username} є приватним")
+                                        logging.error(f"❌ Видаляємо канал з списку")
+                                        channel_entities.remove(entity)
+                                        CHANNELS_LIST.remove("@" + entity.username)
+                                        try:
+                                            # Зберігаємо зміни назад у config.py
+                                            with open('config.py', 'r') as file:
+                                                lines = file.readlines()
+                                            
+                                            for i, line in enumerate(lines):
+                                                if line.startswith('CHANNELS_LIST'):
+                                                    lines[i] = f"CHANNELS_LIST = {CHANNELS_LIST}\n"
+                                            
+                                            with open('config.py', 'w') as file:
+                                                file.writelines(lines)
+                                            continue
+                                        except PermissionError:
+                                            logging.error("Закрийте файл config.py і спробуйте ще раз")
+                                            await async_sleep(1)
+                                    else:   
+                                        logging.error(f"❌ Помилка при приєднанні до групи для коментарів: {e}")
+                                        continue
+                        except Exception as e:
+                            logging.info(f"Канал {username} не має окремої групи для коментарів")
                         chat_id = event.chat_id
                         message = event.message
                         comment_text = choice(comment_texts)
@@ -144,12 +169,6 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
                     except Exception as e:
                         if "the peer was invalid" in str(e):
                             logging.error(f"❌ В каналі {event.chat.username} не можна залишити коментарі!")
-                            continue
-                        elif "channel specified is private" in str(e):
-                            logging.error(f"❌ Канал {event.chat.username} є приватним")
-                            logging.error(f"❌ Видаляємо канал з списку")
-                            channel_entities.remove(entity)
-                            CHANNELS_LIST.remove(f"@{entity.username}")
                             continue
                         else:
                             logging.error(f"⚠ Помилка при коментуванні: {e}")
