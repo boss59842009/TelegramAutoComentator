@@ -1,5 +1,5 @@
-CHANNELS_LIST = ["@test1", "@test2", "@test3"]
-INVITE_LINKS = ["https://t.me/+Z8s8QzZ3_NVjNDgy"]
+CHANNELS_LIST = ["@channel_for_test11"]
+INVITE_LINKS = ["https://t.me/+HkOBdwasdfao0NzMy"]
 COMMENT_TEXTS = [
     "Дякую!", 
     "Цікава інформація!", 

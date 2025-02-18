@@ -5,10 +5,14 @@ from telethon import TelegramClient, events
 from telethon.errors.rpcerrorlist import SessionRevokedError, PhoneNumberBannedError
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.messages import ImportChatInviteRequest
+from telethon.tl.functions.channels import GetFullChannelRequest
 
 import asyncio
 import os
 from config import *
+import random
+from time import sleep
+from asyncio import sleep as async_sleep
 
 # 🔹 Налаштування логування
 logging.basicConfig(
@@ -20,6 +24,8 @@ logging.basicConfig(
     ]
 )
 
+# На початку файлу після імпортів
+commented_messages = {}
 
 # Основна логіка бота
 async def run_bot(session_data, channels_list=None, comment_texts=None, comment_images=None, invite_links=None, messages_mode=1):
@@ -47,7 +53,7 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
         app_version=app_version)
     channels_list = [channel.strip("@") for channel in channels_list]
     try:
-        await client.start()
+        await client.start() 
         logging.info(f"✅ Авторизація успішна: {session_name}")
 
         channel_entities = []
@@ -55,12 +61,22 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
             try:
                 channel_entity = await client.get_entity(username)
                 channel_entities.append(channel_entity)
-                commented_messages = {entity.id: set() for entity in channel_entities}
+                full_channel = await client(GetFullChannelRequest(channel_entity))
+                # Перевіряємо наявність групи для коментарів
+                if hasattr(full_channel, "full_chat") and full_channel.full_chat.linked_chat_id:
+                    await client(JoinChannelRequest(full_channel.full_chat.linked_chat_id))
+                    logging.info(f"Канал {username} приєднався до групи для коментарів: {full_channel.full_chat.linked_chat_id}")
+                else:
+                    logging.info(f"Канал {username} не має окремої групи для коментарів")
             except Exception as e:
                 logging.error(f"Помилка при отриманні каналів: {e}")
                 if 'No user has' in str(e) and 'as username' in str(e) and channel_entities == None:
                     logging.error("Не знайдено каналів для коментування. Скрипт завершено.")
                     continue
+
+        # Ініціалізуємо словник для кожного каналу
+        for channel in channel_entities:
+            commented_messages[channel.id] = set()
 
         if channels_list:
             for channel in channels_list:
@@ -68,11 +84,11 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
                     await client(JoinChannelRequest(channel))
                     logging.info(f"📢 Успішно приєдналися до @{channel}")
                 except Exception as e:
-                    if "you were banned" in str(e):
+                    if "banned" in str(e):
                         logging.warning(f"❌ Вас заблоковано у каналі @{channel}")
                     else:
                         logging.warning(f"⚠ Не вдалося приєднатися до @{channel}: {e}")
-        elif invite_links:
+        if invite_links:
             for invite_link in invite_links:
                 try:
                     chat_hash = invite_link.split("+")[-1]  # Отримуємо хеш-запрошення
@@ -92,32 +108,53 @@ async def run_bot(session_data, channels_list=None, comment_texts=None, comment_
         @client.on(events.NewMessage(chats=channels_list))
         async def handler(event):
             logging.info(f"📩 Новий пост у @{event.chat.username}: {event.message.text[:50]}...")
+            
+            # Додаємо випадкову затримку перед коментуванням
+            delay = random.uniform(1, 10)
+            await async_sleep(delay)
+            
             for entity in channel_entities:
+                print(entity)
                 if entity.id == event.message.peer_id.channel_id:
-                    if not event.message.out and event.message.id not in commented_messages[entity.id]:
-                        try:
-                            chat_id = event.chat_id
-                            message = event.message
-                            comment_text = choice(comment_texts)
-                            image = choice(comment_images)
-                            if messages_mode == 1:
-                                await client.send_message(entity=chat_id, message=comment_text, comment_to=message)
-                                logging.info(f"💬 Коментар {comment_text[:50]}... додано до поста {event.message.text[:50]}... в каналі {event.chat.username}")
-                            elif messages_mode == 2:
-                                await client.send_file(entity=chat_id, file=f"images/{image}", caption=comment_text, comment_to=message)
-                                logging.info(f"💬 Коментар {comment_text[:50]}... + картинка {image} додано до поста {event.message.text[:50]}... в каналі {event.chat.username}")
-                            elif messages_mode == 3:
-                                await client.send_file(entity=chat_id, file=f"images/{image}", comment_to=message)
-                                logging.info(f"💬 Коментар картинка {image} додано до поста {event.message.text[:50]}... в каналі {event.chat.username}")
-                            commented_messages[entity.id].add(event.message.id)
-                        except Exception as e:
-                            if "the peer was invalid" in str(e):
-                                logging.error(f"❌ В каналі {event.chat.username} не можна залишити коментарі!")
-                                continue
-                            else:
-                                logging.error(f"⚠ Помилка при коментуванні: {e}")
-                                continue
-
+                    try:
+                        # Перевіряємо чи не коментували цей пост раніше
+                        if event.message.id in commented_messages.get(entity.id, set()):
+                            logging.info(f"Пост вже було прокоментовано, пропускаємо...")
+                            continue
+                            
+                        chat_id = event.chat_id
+                        message = event.message
+                        comment_text = choice(comment_texts)
+                        image = choice(comment_images)
+                        
+                        # Додаємо обмеження на кількість коментарів
+                        if len(commented_messages.get(entity.id, set())) >= 10:
+                            logging.info(f"Досягнуто ліміт коментарів для каналу {event.chat.username}")
+                            continue
+                            
+                        if messages_mode == 1:
+                            await client.send_message(entity=chat_id, message=comment_text, comment_to=message)
+                            logging.info(f"💬 Коментар {comment_text[:50]}... додано до поста {event.message.text[:50]}... в каналі {event.chat.username}")
+                        elif messages_mode == 2:
+                            await client.send_file(entity=chat_id, file=f"images/{image}", caption=comment_text, comment_to=message)
+                            logging.info(f"💬 Коментар {comment_text[:50]}... + картинка {image} додано до поста {event.message.text[:50]}... в каналі {event.chat.username}")
+                        elif messages_mode == 3:
+                            await client.send_file(entity=chat_id, file=f"images/{image}", comment_to=message)
+                            logging.info(f"💬 Коментар картинка {image} додано до поста {event.message.text[:50]}... в каналі {event.chat.username}")
+                        commented_messages[entity.id].add(event.message.id)
+                    except Exception as e:
+                        if "the peer was invalid" in str(e):
+                            logging.error(f"❌ В каналі {event.chat.username} не можна залишити коментарі!")
+                            continue
+                        elif "channel specified is private" in str(e):
+                            logging.error(f"❌ Канал {event.chat.username} є приватним")
+                            logging.error(f"❌ Видаляємо канал з списку")
+                            channel_entities.remove(entity)
+                            CHANNELS_LIST.remove(entity.username)
+                            continue
+                        else:
+                            logging.error(f"⚠ Помилка при коментуванні: {e}")
+                            continue
         logging.info("🚀 Бот запущений! Очікуємо нові повідомлення...")
         await client.run_until_disconnected()
 
